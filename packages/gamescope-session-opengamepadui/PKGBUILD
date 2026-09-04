@@ -1,0 +1,25 @@
+# Original Maintainer: Derek J. Clark <derekjohn.clark@gmail.com>
+
+pkgname=gamescope-session-opengamepadui
+_commit=0000000000000000000000000000000000000000
+pkgver=1
+pkgrel=1
+pkgdesc="OpenGamepadUI Gamescope session"
+arch=('any')
+url="https://github.com/OpenGamingCollective/gamescope-session-opengamepadui"
+license=('MIT')
+groups=()
+depends=('gamescope-ogc')
+makedepends=('git')
+source=("git+https://github.com/OpenGamingCollective/gamescope-session-opengamepadui.git#commit=$_commit")
+md5sums=('SKIP')
+
+pkgver() {
+  cd "$srcdir/gamescope-session-opengamepadui"
+  printf "r%s.%s" "$(git rev-list --count HEAD)" "$(git rev-parse --short HEAD)"
+}
+
+package() {
+  cd "$srcdir/gamescope-session-opengamepadui"
+  cp -rv ${srcdir}/gamescope-session-opengamepadui/usr ${pkgdir}/usr
+}

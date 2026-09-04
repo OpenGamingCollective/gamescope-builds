@@ -1,0 +1,27 @@
+{
+  "gamescope-ogc": {
+    "repo": "OpenGamingCollective/gamescope",
+    "branch": "ogc",
+    "sha": "0000000000000000000000000000000000000000"
+  },
+  "gamescope-session": {
+    "repo": "OpenGamingCollective/gamescope-session",
+    "branch": "main",
+    "sha": "0000000000000000000000000000000000000000"
+  },
+  "gamescope-session-steam": {
+    "repo": "OpenGamingCollective/gamescope-session-steam",
+    "branch": "main",
+    "sha": "0000000000000000000000000000000000000000"
+  },
+  "gamescope-session-ogui-steam": {
+    "repo": "OpenGamingCollective/gamescope-session-ogui-steam",
+    "branch": "main",
+    "sha": "0000000000000000000000000000000000000000"
+  },
+  "gamescope-session-opengamepadui": {
+    "repo": "OpenGamingCollective/gamescope-session-opengamepadui",
+    "branch": "main",
+    "sha": "0000000000000000000000000000000000000000"
+  }
+}

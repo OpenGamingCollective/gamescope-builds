@@ -1,0 +1,28 @@
+# Original Maintainer: Joaquín I. Aramendía <samsagax at gmail dot com>
+
+pkgname=gamescope-session
+_commit=0000000000000000000000000000000000000000
+pkgver=1
+pkgrel=1
+pkgdesc="Common gamescope session files"
+arch=('any')
+url="https://github.com/OpenGamingCollective/gamescope-session"
+license=('MIT')
+groups=()
+depends=('gamescope-ogc')
+makedepends=('git')
+optdepends=('mangohud: for performance overlay')
+install=gamescope-session.install
+source=("git+https://github.com/OpenGamingCollective/gamescope-session.git#commit=$_commit")
+md5sums=('SKIP')
+
+pkgver() {
+  cd "$srcdir/gamescope-session"
+  printf "r%s.%s" "$(git rev-list --count HEAD)" "$(git rev-parse --short HEAD)"
+}
+
+package() {
+  cd "$srcdir/gamescope-session"
+  cp -rv "${srcdir}/gamescope-session/usr" "${pkgdir}/usr"
+  install -Dm644 "${srcdir}/gamescope-session/LICENSE" "${pkgdir}/usr/share/licenses/${pkgname}/LICENSE"
+}

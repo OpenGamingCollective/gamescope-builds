@@ -1,0 +1,25 @@
+# Original Maintainer: Derek J. Clark <derekjohn.clark@gmail.com>
+
+pkgname=gamescope-session-ogui-steam
+_commit=0000000000000000000000000000000000000000
+pkgver=1
+pkgrel=1
+pkgdesc="Gamescope session for steam + OpenGamepadUI Overlay"
+arch=('any')
+url="https://github.com/OpenGamingCollective/gamescope-session-ogui-steam"
+license=('MIT')
+groups=()
+depends=('gamescope-ogc' 'gamescope-session')
+makedepends=('git')
+source=("git+https://github.com/OpenGamingCollective/gamescope-session-ogui-steam.git#commit=$_commit")
+md5sums=('SKIP')
+
+pkgver() {
+  cd "$srcdir/gamescope-session-ogui-steam"
+  printf "r%s.%s" "$(git rev-list --count HEAD)" "$(git rev-parse --short HEAD)"
+}
+
+package() {
+  cd "$srcdir/gamescope-session-ogui-steam"
+  cp -rv ${srcdir}/gamescope-session-ogui-steam/usr ${pkgdir}/usr
+}
