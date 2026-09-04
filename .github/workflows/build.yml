@@ -1,0 +1,123 @@
+name: Build
+
+on:
+  schedule:
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    container:
+      image: archlinux/archlinux:base-devel
+    steps:
+      - name: Install tooling
+        run: |
+          pacman -Syu --noconfirm
+          pacman -S --noconfirm --needed git curl jq github-cli sudo
+          useradd -m builder
+          echo 'builder ALL=(ALL) NOPASSWD: ALL' >/etc/sudoers.d/builder
+          chmod 440 /etc/sudoers.d/builder
+
+      - name: Clone repository
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          git clone --depth=1 "https://github.com/${GITHUB_REPOSITORY}.git" "$GITHUB_WORKSPACE"
+
+      - name: Check upstream heads
+        id: heads
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p build
+          rm -f build/parts.json build/heads.json
+          changed=false
+          for pkg in $(jq -r 'keys[]' state/build-state.json); do
+            repo=$(jq -r --arg p "$pkg" '.[$p].repo' state/build-state.json)
+            branch=$(jq -r --arg p "$pkg" '.[$p].branch' state/build-state.json)
+            state_sha=$(jq -r --arg p "$pkg" '.[$p].sha' state/build-state.json)
+            sha=$(curl -sS -H "Authorization: Bearer $GH_TOKEN" \
+              -H "Accept: application/vnd.github+json" \
+              -H "X-GitHub-Api-Version: 2022-11-28" \
+              "https://api.github.com/repos/$repo/commits/$branch" | jq -r .sha)
+            printf '{"%s":{"repo":"%s","branch":"%s","sha":"%s"}}\n' "$pkg" "$repo" "$branch" "$sha" >> build/parts.json
+            echo "$pkg: $state_sha -> $sha"
+            if [ "$state_sha" != "$sha" ]; then
+              changed=true
+            fi
+          done
+          jq -s add build/parts.json > build/heads.json
+          rm -f build/parts.json
+          echo "changed=$changed" >> "$GITHUB_OUTPUT"
+
+      - name: Prepare package builds
+        if: steps.heads.outputs.changed == 'true'
+        run: |
+          rm -rf build/pkgs
+          mkdir -p build/pkgs
+          for pkg in gamescope-ogc gamescope-session gamescope-session-steam gamescope-session-ogui-steam gamescope-session-opengamepadui; do
+            mkdir -p "build/pkgs/$pkg"
+            cp -a "packages/$pkg/." "build/pkgs/$pkg/"
+            sha=$(jq -r --arg p "$pkg" '.[$p].sha' build/heads.json)
+            sed -i "s/^_commit=.*/_commit=$sha/" "build/pkgs/$pkg/PKGBUILD"
+            echo "$pkg -> $sha"
+          done
+          chown -R builder:builder build/pkgs
+
+      - name: Build all packages
+        if: steps.heads.outputs.changed == 'true'
+        run: |
+          for pkg in gamescope-ogc gamescope-session gamescope-session-steam gamescope-session-ogui-steam gamescope-session-opengamepadui; do
+            echo "== building $pkg =="
+            runuser -l builder -c "cd '$GITHUB_WORKSPACE/build/pkgs/$pkg' && makepkg -s --noconfirm --force"
+          done
+
+      - name: Verify artifacts
+        if: steps.heads.outputs.changed == 'true'
+        run: |
+          n=$(find build/pkgs -name '*.pkg.tar.zst' | wc -l)
+          test "$n" -eq 5
+          echo "Built $n packages:"
+          find build/pkgs -maxdepth 2 -name '*.pkg.tar.zst' -printf '%f\n' | sort
+
+      - name: Record built SHAs
+        if: steps.heads.outputs.changed == 'true'
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          jq -s '.[0] * .[1]' state/build-state.json build/heads.json > build/build-state.json.tmp
+          mv build/build-state.json.tmp state/build-state.json
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git config http.https://github.com/.extraheader "AUTHORIZATION: basic $(printf 'x-access-token:%s' "$GITHUB_TOKEN" | base64 --wrap 0)"
+          git add state/build-state.json
+          git commit -m "build: record built SHAs"
+          git push
+
+      - name: Create release
+        if: steps.heads.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          today=$(date +%Y%m%d)
+          prefix="v$today."
+          n=1
+          while gh release view "${prefix}${n}" >/dev/null 2>&1; do
+            n=$((n + 1))
+          done
+          tag="${prefix}${n}"
+          notes=$(printf '%s\n' "Build of the five OGC gamescope packages." "Source commits:")
+          for pkg in $(jq -r 'keys[]' build/heads.json); do
+            repo=$(jq -r --arg p "$pkg" '.[$p].repo' build/heads.json)
+            sha=$(jq -r --arg p "$pkg" '.[$p].sha' build/heads.json)
+            notes=$(printf "%s\n%s" "$notes" "- $pkg: built from $repo@$sha")
+          done
+          assets=()
+          for f in build/pkgs/*/*.pkg.tar.zst; do
+            assets+=("$f")
+          done
+          gh release create "$tag" "${assets[@]}" --title "$tag" --notes "$notes"
+          echo "Released $tag"
