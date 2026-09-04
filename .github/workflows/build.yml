@@ -73,15 +73,20 @@ jobs:
           for pkg in gamescope-ogc gamescope-session gamescope-session-steam gamescope-session-ogui-steam gamescope-session-opengamepadui; do
             echo "== building $pkg =="
             runuser -l builder -c "cd '$GITHUB_WORKSPACE/build/pkgs/$pkg' && makepkg -s --noconfirm --force"
+            for f in "$GITHUB_WORKSPACE/build/pkgs/$pkg"/*.pkg.tar.zst; do
+              [[ "$f" == *-debug-* ]] && continue
+              echo "== installing $f =="
+              pacman -U --noconfirm "$f"
+            done
           done
 
       - name: Verify artifacts
         if: steps.heads.outputs.changed == 'true'
         run: |
-          n=$(find build/pkgs -name '*.pkg.tar.zst' | wc -l)
+          n=$(find build/pkgs -name '*.pkg.tar.zst' ! -name '*-debug-*' | wc -l)
           test "$n" -eq 5
           echo "Built $n packages:"
-          find build/pkgs -maxdepth 2 -name '*.pkg.tar.zst' -printf '%f\n' | sort
+          find build/pkgs -maxdepth 2 -name '*.pkg.tar.zst' ! -name '*-debug-*' -printf '%f\n' | sort
 
       - name: Record built SHAs
         if: steps.heads.outputs.changed == 'true'
@@ -117,6 +122,7 @@ jobs:
           done
           assets=()
           for f in build/pkgs/*/*.pkg.tar.zst; do
+            [[ "$f" == *-debug-* ]] && continue
             assets+=("$f")
           done
           gh release create "$tag" "${assets[@]}" --title "$tag" --notes "$notes"
