@@ -2,7 +2,7 @@
   "gamescope-ogc": {
     "repo": "OpenGamingCollective/gamescope",
     "branch": "ogc",
-    "sha": "f337915858b3574bc790f2ac02f23827b21b78c6"
+    "sha": "0ef725a8754b3480fb52d2493c4b3af3b845659b"
   },
   "gamescope-session": {
     "repo": "OpenGamingCollective/gamescope-session",
@@ -12,7 +12,7 @@
   "gamescope-session-steam": {
     "repo": "OpenGamingCollective/gamescope-session-steam",
     "branch": "main",
-    "sha": "55e541aa3adb80ee751220c886b9d133504f6e20"
+    "sha": "669bbaeea8515c190bb7307302936e9544a3f4bb"
   },
   "gamescope-session-ogui-steam": {
     "repo": "OpenGamingCollective/gamescope-session-ogui-steam",
