@@ -2,7 +2,7 @@
   "gamescope-ogc": {
     "repo": "OpenGamingCollective/gamescope",
     "branch": "ogc",
-    "sha": "0ef725a8754b3480fb52d2493c4b3af3b845659b"
+    "sha": "4b50dd7a719c09acb1a0141ff6eac9dab1ab4f2f"
   },
   "gamescope-session": {
     "repo": "OpenGamingCollective/gamescope-session",
